@@ -62,11 +62,10 @@ class EqualWeightPortfolio:
         # Get the assets by excluding the specified column
         assets = df.columns[df.columns != self.exclude]
         self.portfolio_weights = pd.DataFrame(index=df.index, columns=df.columns)
-
         """
         TODO: Complete Task 1 Below
         """
-
+        self.portfolio_weights.loc[:, assets] = 1 / len(assets)
         """
         TODO: Complete Task 1 Above
         """
@@ -117,7 +116,14 @@ class RiskParityPortfolio:
         """
         TODO: Complete Task 2 Below
         """
-
+        for i in range(self.lookback + 1, len(df_returns.index)):
+            inv_num = []
+            start_date = df_returns.index[i - self.lookback]
+            end_date = df_returns.index[i - 1]
+            for j in range(len(assets)):
+                inv_num.append(1 / (df_returns.loc[start_date:end_date, assets[j]]).std())
+            for j in range(len(assets)):
+                self.portfolio_weights.loc[df_returns.index[i], assets[j]] = inv_num[j] / sum(inv_num)
         """
         TODO: Complete Task 2 Above
         """
@@ -192,8 +198,10 @@ class MeanVariancePortfolio:
 
                 # Sample Code: Initialize Decision w and the Objective
                 # NOTE: You can modify the following code
-                w = model.addMVar(n, name="w", ub=1)
-                model.setObjective(w.sum(), gp.GRB.MAXIMIZE)
+                w = model.addMVar(n, name="w", ub=1, lb=0)
+                model.addConstr(w.sum() == 1)
+                model.setObjective(w.T @ mu - self.gamma / 2 * w.T @ Sigma @ w, gp.GRB.MAXIMIZE)
+                
 
                 """
                 TODO: Complete Task 3 Below
